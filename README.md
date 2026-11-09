@@ -22,7 +22,9 @@ O script [01-modelo-fisico.sql](sql/01-modelo-fisico.sql) implementa a estrutura
 |---|---|
 | `docs/modelo-conceitual/` | Diagrama conceitual |
 | `docs/modelo-logico/` | Diagrama lógico |
-| `sql/` | Implementação física |
+| `sql/` | Implementação física, Parte 2 (scripts 02–08) |
+| `webdriver/`, `main.py` | Aplicação Python (CRUD e perfis usuário/empresa/admin) |
+| `tests/` | Testes unitários e de integração (MySQL) |
 
 ## Recursos implementados no script
 
@@ -47,6 +49,19 @@ O script não foi executado em MySQL nesta preparação. Reexecutá-lo após cri
 ## Regras e limites
 
 Cada instituição possui um plano atual. Um chamado pode ser associado a vários administradores. As alterações em arquivos devem passar pelos procedimentos para aplicar cotas e registrar histórico. Autenticação, hash de senha e permissões da conta do banco precisam ser configurados pela aplicação e pelo responsável pelo ambiente. O histórico de metadados não substitui a preservação dos arquivos de versões anteriores.
+
+## Parte 2 — instalação e permissões
+
+Como root, nesta ordem (cliente com utf8mb4, p.ex. `mysql -u root -p --default-character-set=utf8mb4 < arquivo.sql`):
+
+1. `sql/01-modelo-fisico.sql` a `sql/05-views-empresa-admin.sql`
+2. `sql/06-procedures-permissoes.sql` (`Conta_usuários`, `Remover_acessos`, `usr_*`)
+3. `sql/07-funcoes-triggers.sql` (`fn_arquivo_inativo`, `Safe_security`, `Registrar_operacao`, `Atualizar_acesso`)
+4. `sql/08-roles-permissoes.sql` (`PapelUsuario`, `PapelEmpresa`, `PapelAdm`)
+
+Pré-requisitos: MySQL 8.0.16+, sem contas anônimas, uma conta MySQL por usuário com nome igual a `usuario.login`, e `SET DEFAULT ROLE` para cada conta. `atividades_recentes` é acessível apenas ao root. Detalhes, decisões de interpretação e limitações: [docs/parte2-permissoes.md](docs/parte2-permissoes.md).
+
+Testes: `python -m unittest discover -s tests -v` (unitários); com `WEBDRIVER_TEST_MYSQL=1` também roda os de integração em MySQL real.
 
 ## Arquivos editáveis dos diagramas
 
