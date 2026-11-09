@@ -5,7 +5,7 @@ try:
     from mysql.connector import Error
 except ImportError:
     raise SystemExit('Instale as dependências: python -m pip install -r requirements.txt')
-from webdriver import planos, repositorio, arquivos, historicos
+from webdriver import planos, repositorio, arquivos, historicos, perfil, usuario, empresa, administracao
 from webdriver.catalogo import ENTIDADES, Campo, id_campo
 
 
@@ -125,10 +125,83 @@ def menu_arquivos():
             print('Opção inválida.')
 
 
-def main():
+def menu_acessos():
+    print('\nAcessos: 1 Contar usuários com acesso | 2 Remover acessos (mantém o proprietário) | 0 Voltar')
+    op = input('Opção: ').strip()
+    if op == '1':
+        print('Usuários com acesso:', administracao.conta_usuarios(input('ID do arquivo: ')))
+    elif op == '2':
+        chave = input('ID do arquivo: ')
+        if confirmar():
+            administracao.remover_acessos(chave)
+            print('Acessos removidos; proprietário preservado.')
+        else:
+            print('Operação cancelada.')
+
+
+def menu_atividades():
+    print('\nAtividades (somente root): 1 Verificar_atividades | 2 Chavear prioridade | 0 Voltar')
+    op = input('Opção: ').strip()
+    if op == '1':
+        administracao.verificar_atividades()
+        print('atividades_recentes atualizada com a data atual.')
+    elif op == '2':
+        administracao.chavear(input('ID do arquivo: '))
+        print('Prioridade alternada.')
+
+
+def menu_usuario():
+    while True:
+        print('\nMeus arquivos: 1 Listar | 2 Carregar | 3 Atualizar | 4 Histórico | 0 Sair')
+        op = input('Opção: ').strip()
+        if op == '0':
+            return
+        if op == '1':
+            mostrar(usuario.listar_arquivos(int(input('Página: ') or '1')))
+        elif op in ('2', '3'):
+            atual = input('Nome atual do arquivo: ') if op == '3' else None
+            dados = dados_campos((*arquivos.CAMPOS, Campo('tamanho_bytes')))
+            usuario.carregar(dados) if op == '2' else usuario.atualizar(atual, dados)
+            print('Operação concluída.')
+        elif op == '4':
+            mostrar(usuario.historico(int(input('Página: ') or '1')))
+        else:
+            print('Opção inválida.')
+
+
+def menu_empresa():
+    while True:
+        print('\nEmpresa (somente leitura): 1 Usuários | 2 Arquivos | 0 Sair')
+        op = input('Opção: ').strip()
+        if op == '0':
+            return
+        if op in ('1', '2'):
+            pagina = int(input('Página: ') or '1')
+            mostrar(empresa.usuarios(pagina) if op == '1' else empresa.arquivos(pagina))
+        else:
+            print('Opção inválida.')
+
+
+MENSAGENS = {1451: 'Registro vinculado a outros dados; exclusão bloqueada.',
+             1452: 'Referência inexistente: confira os IDs informados.',
+             1062: 'Registro duplicado: confira login, e-mail ou vínculo.',
+             1045: 'Acesso negado: confira as credenciais.',
+             1049: 'Banco inexistente: execute o modelo físico antes.',
+             1146: 'Tabela inexistente: confira o modelo físico.',
+             1305: 'Procedimento ou função inexistente: confira o modelo físico.',
+             1142: 'Conta MySQL sem permissão para a operação.',
+             1370: 'Conta MySQL sem permissão para executar a rotina.'}
+
+
+def mensagem_erro(erro):
+    return MENSAGENS.get(erro.errno, erro.msg if erro.errno == 1644 else f'Erro MySQL {erro.errno}: confira a configuração e os dados.')
+
+
+def menu_admin(perfil_ativo):
     cadastros = list(ENTIDADES)
-    opcoes = ['planos', *cadastros, 'arquivos', 'operacoes', 'versoes']
-    print('WebDriver — console administrativo local, usando a conta MySQL de config.ini.')
+    opcoes = ['planos', *cadastros, 'arquivos', 'operacoes', 'versoes', 'acessos']
+    if perfil_ativo == 'root':
+        opcoes.append('atividades')
     while True:
         print('\n' + '\n'.join(f'{i} {nome}' for i, nome in enumerate(opcoes, 1)) + '\n0 Sair')
         try:
@@ -143,6 +216,10 @@ def main():
                 menu_planos()
             elif nome == 'arquivos':
                 menu_arquivos()
+            elif nome == 'acessos':
+                menu_acessos()
+            elif nome == 'atividades':
+                menu_atividades()
             elif nome in ('operacoes', 'versoes'):
                 arquivo = input('ID do arquivo (vazio = todos): ').strip() or None
                 pagina = int(input('Página: ') or '1')
@@ -152,19 +229,40 @@ def main():
         except ValueError as erro:
             print('Dados inválidos:', erro)
         except Error as erro:
-            mensagens = {1451: 'Registro vinculado a outros dados; exclusão bloqueada.',
-                         1452: 'Referência inexistente: confira os IDs informados.',
-                         1062: 'Registro duplicado: confira login, e-mail ou vínculo.',
-                         1045: 'Acesso negado: confira as credenciais.',
-                         1049: 'Banco inexistente: execute o modelo físico antes.',
-                         1146: 'Tabela inexistente: confira o modelo físico.',
-                         1305: 'Procedimento ou função inexistente: confira o modelo físico.',
-                         1142: 'Conta MySQL sem permissão para a operação.',
-                         1370: 'Conta MySQL sem permissão para executar a rotina.'}
-            print(mensagens.get(erro.errno, erro.msg if erro.errno == 1644 else f'Erro MySQL {erro.errno}: confira a configuração e os dados.'))
+            print(mensagem_erro(erro))
         except (EOFError, KeyboardInterrupt):
             print('\nEncerrado.')
             return
+
+
+def menu_restrito(menu):
+    """Menus de usuário/empresa: erros do MySQL viram mensagens; o limite real é a conta."""
+    try:
+        menu()
+    except ValueError as erro:
+        print('Dados inválidos:', erro)
+    except Error as erro:
+        print(mensagem_erro(erro))
+    except (EOFError, KeyboardInterrupt):
+        print('\nEncerrado.')
+
+
+def main():
+    try:
+        perfil_ativo = perfil.detectar()
+    except (Error, ValueError) as erro:
+        print(mensagem_erro(erro) if isinstance(erro, Error) else erro)
+        return
+    # O perfil vem da role/conta ativa no MySQL; o menu apenas acompanha o que a conta pode fazer.
+    print(f'WebDriver — conta MySQL de config.ini, perfil: {perfil_ativo or "sem role ativa"}.')
+    if perfil_ativo in ('admin', 'root'):
+        menu_admin(perfil_ativo)
+    elif perfil_ativo == 'usuario':
+        menu_restrito(menu_usuario)
+    elif perfil_ativo == 'empresa':
+        menu_restrito(menu_empresa)
+    else:
+        print('Conta sem PapelUsuario, PapelEmpresa ou PapelAdm ativo (veja SET DEFAULT ROLE em sql/08-roles-permissoes.sql).')
 
 
 if __name__ == '__main__':
