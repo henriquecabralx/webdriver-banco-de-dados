@@ -1,7 +1,3 @@
--- WEBDRIVER | MODELO FISICO | MySQL 8.0.16+ / MySQL Workbench
--- Executar em banco novo. Nao apaga tabelas existentes.
--- Regras assumidas: cada instituicao tem um plano atual; um chamado admite varios admins;
--- o armazenamento e medido em bytes e a remocao de arquivo e logica.
 CREATE DATABASE IF NOT EXISTS webdriver CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE webdriver;
 
@@ -123,8 +119,6 @@ CREATE TABLE suporte_adm (
  CONSTRAINT fk_sa_admin FOREIGN KEY (id_administrador) REFERENCES administrador(id_administrador) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Protecao contra atribuicao de comentario/compartilhamento/suporte a arquivo sem acesso.
--- Um arquivo PUBLICO e acessivel a todos; COMPARTILHADO requer convite registrado.
 DELIMITER $$
 CREATE FUNCTION fn_pode_acessar(p_usuario BIGINT UNSIGNED, p_arquivo BIGINT UNSIGNED)
 RETURNS TINYINT READS SQL DATA
@@ -175,8 +169,6 @@ BEGIN
  END IF;
 END$$
 
--- Impede reduzir cotas abaixo do uso atual. ALTERACOES CONCORRENTES
--- de planos/instituicoes devem ser serializadas pela aplicacao.
 CREATE TRIGGER trg_plano_bu BEFORE UPDATE ON plano FOR EACH ROW
 BEGIN
  IF NEW.espaco_por_usuario_bytes < OLD.espaco_por_usuario_bytes AND EXISTS (
@@ -203,9 +195,6 @@ BEGIN
  THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Instituicao destino nao comporta os arquivos'; END IF;
 END$$
 
--- Acoes em arquivos sao realizadas por procedimentos transacionais, que gravam
--- automaticamente operacao e versionamento. O usuario do aplicativo deve ter
--- EXECUTE nos procedimentos e NAO ter INSERT/UPDATE/DELETE direto em arquivo.
 CREATE PROCEDURE sp_carregar_arquivo(
  IN p_dono BIGINT UNSIGNED, IN p_nome VARCHAR(255), IN p_tipo VARCHAR(120),
  IN p_permissao VARCHAR(20), IN p_tamanho BIGINT UNSIGNED,
@@ -277,16 +266,3 @@ BEGIN
  COMMIT;
 END$$
 DELIMITER ;
-
--- Observacoes de seguranca/escopo:
--- 1. Senhas devem ser transformadas em hash seguro pela aplicacao, nunca armazenadas em texto puro.
--- 2. Restrinja acesso direto as tabelas; os procedimentos garantem limite e auditoria apenas
---    quando todas as alteracoes em arquivo passam por eles.
--- 3. Triggers verificam mudancas de plano/instituicao, mas concorrencia exige controle transacional no backend.
--- 4. Para uso em producao, tratar autorizacao e permissoes no backend; a funcao de acesso
---    verifica as regras basicas deste projeto academico.
-
--- IMPORTANTE: nao executar este GRANT sem criar antes uma conta especifica de app.
--- Conceda somente SELECT nas tabelas necessarias e EXECUTE nos procedimentos;
--- nao conceda INSERT/UPDATE/DELETE em arquivo, operacao_arquivo ou versionamento.
--- A autenticacao do usuario e a verificacao de identidade do solicitante cabem ao backend.

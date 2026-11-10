@@ -1,8 +1,7 @@
-"""Campos permitidos para o CRUD; nenhum identificador SQL vem do usuário."""
-from dataclasses import dataclass
-from datetime import date, time, datetime
 import hashlib
 import secrets
+from dataclasses import dataclass
+from datetime import date, datetime, time
 
 
 @dataclass(frozen=True)
@@ -35,7 +34,6 @@ class Campo:
         if self.tipo == 'instante':
             return datetime.fromisoformat(str(valor))
         if self.tipo == 'senha':
-            # Senha não é aparada nem armazenada em texto puro.
             if len(str(valor)) < 8:
                 raise ValueError('Senha deve conter pelo menos 8 caracteres.')
             sal = secrets.token_bytes(16)

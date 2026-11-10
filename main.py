@@ -1,12 +1,28 @@
-"""Console administrativo acadêmico: CRUD da Parte 1."""
 import json
+import sys
 from getpass import getpass
+
+if sys.version_info >= (3, 15):
+    raise SystemExit(
+        'Python 3.15 ainda não é compatível com o MySQL Connector/Python. '
+        'Use o ambiente .venv do projeto (Python 3.12) ou Python 3.10–3.14.'
+    )
+
 try:
     from mysql.connector import Error
 except ImportError:
     raise SystemExit('Instale as dependências: python -m pip install -r requirements.txt')
-from webdriver import planos, repositorio, arquivos, historicos, perfil, usuario, empresa, administracao
-from webdriver.catalogo import ENTIDADES, Campo, id_campo
+from webdriver import (
+    administracao,
+    arquivos,
+    empresa,
+    historicos,
+    perfil,
+    planos,
+    repositorio,
+    usuario,
+)
+from webdriver.catalogo import ENTIDADES, Campo
 
 
 def mostrar(valor):
@@ -236,7 +252,6 @@ def menu_admin(perfil_ativo):
 
 
 def menu_restrito(menu):
-    """Menus de usuário/empresa: erros do MySQL viram mensagens; o limite real é a conta."""
     try:
         menu()
     except ValueError as erro:
@@ -253,7 +268,6 @@ def main():
     except (Error, ValueError) as erro:
         print(mensagem_erro(erro) if isinstance(erro, Error) else erro)
         return
-    # O perfil vem da role/conta ativa no MySQL; o menu apenas acompanha o que a conta pode fazer.
     print(f'WebDriver — conta MySQL de config.ini, perfil: {perfil_ativo or "sem role ativa"}.')
     if perfil_ativo in ('admin', 'root'):
         menu_admin(perfil_ativo)

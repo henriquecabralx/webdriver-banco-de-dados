@@ -1,6 +1,5 @@
-"""CRUD parametrizado dos cadastros, preservando as restrições do MySQL."""
-from .conexao import abrir_conexao
 from .catalogo import ENTIDADES, id_campo, validar_dados
+from .conexao import abrir_conexao
 
 
 def definir(nome):

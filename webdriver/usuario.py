@@ -1,7 +1,6 @@
-"""Operações do PapelUsuario: somente views sem IDs e procedures usr_*; a identidade é a conta MySQL conectada."""
-from .conexao import abrir_conexao
-from .catalogo import id_campo
 from . import arquivos
+from .catalogo import id_campo
+from .conexao import abrir_conexao
 
 
 def _listar(view, pagina):

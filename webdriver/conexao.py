@@ -1,7 +1,6 @@
-"""Conexão compartilhada pelos módulos do grupo."""
+import configparser
 from contextlib import contextmanager
 from pathlib import Path
-import configparser
 
 import mysql.connector
 

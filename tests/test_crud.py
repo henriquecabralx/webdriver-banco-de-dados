@@ -1,12 +1,9 @@
-"""Testes isolados: não abrem conexão nem simulam execução real do SQL."""
-import importlib
 import sys
 import types
 import unittest
 from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
-# Permite testar regras sem instalar o driver; nenhuma chamada real usa o substituto.
 try:
     import mysql.connector
 except ImportError:
@@ -15,11 +12,11 @@ except ImportError:
     mysql = types.ModuleType('mysql')
     mysql.connector = driver
     with patch.dict(sys.modules, {'mysql': mysql, 'mysql.connector': driver}):
-        from webdriver import conexao, repositorio, arquivos, historicos
-        from webdriver.catalogo import Campo, ENTIDADES, validar_dados
+        from webdriver import arquivos, conexao, repositorio
+        from webdriver.catalogo import ENTIDADES, Campo, validar_dados
 else:
-    from webdriver import conexao, repositorio, arquivos, historicos
-    from webdriver.catalogo import Campo, ENTIDADES, validar_dados
+    from webdriver import arquivos, conexao, repositorio
+    from webdriver.catalogo import ENTIDADES, Campo, validar_dados
 
 
 @contextmanager
@@ -53,7 +50,14 @@ class Validacoes(unittest.TestCase):
             repositorio.definir('usuario; DROP TABLE plano')
 
     def test_arquivo_vazio_e_permissao(self):
-        dados = dict(nome='a', tipo='text/plain', permissao_acesso='PRIVADO', tamanho_bytes=0, localizacao='/a', url='https://example.com/a')
+        dados = {
+            'nome': 'a',
+            'tipo': 'text/plain',
+            'permissao_acesso': 'PRIVADO',
+            'tamanho_bytes': 0,
+            'localizacao': '/a',
+            'url': 'https://example.com/a',
+        }
         self.assertEqual(arquivos.parametros(dados)[3], 0)
         for tamanho in (-1, True, 1.5):
             with self.assertRaises(ValueError):
@@ -72,7 +76,16 @@ class Repositorio(unittest.TestCase):
 
     def test_texto_e_parametro_nao_sql(self):
         malicioso = "teste'); DROP TABLE instituicao; --"
-        repositorio.criar('instituicoes', dict(nome=malicioso, causa_social='Educação', endereco='Recife', id_plano=1, data_aquisicao='2026-11-06'))
+        repositorio.criar(
+            'instituicoes',
+            {
+                'nome': malicioso,
+                'causa_social': 'Educação',
+                'endereco': 'Recife',
+                'id_plano': 1,
+                'data_aquisicao': '2026-11-06',
+            },
+        )
         sql, params = self.cur.execute.call_args.args
         self.assertNotIn(malicioso, sql)
         self.assertIn(malicioso, params)
@@ -111,7 +124,17 @@ class Procedures(unittest.TestCase):
         cur = con.cursor.return_value
         cur.callproc.return_value = (1, 'a', 'text/plain', 'PRIVADO', 0, '/a', 'url', 42)
         with patch.object(arquivos, 'abrir_conexao', lambda: fornecer(con)):
-            resultado = arquivos.criar(1, dict(nome='a', tipo='text/plain', permissao_acesso='PRIVADO', tamanho_bytes=0, localizacao='/a', url='url'))
+            resultado = arquivos.criar(
+                1,
+                {
+                    'nome': 'a',
+                    'tipo': 'text/plain',
+                    'permissao_acesso': 'PRIVADO',
+                    'tamanho_bytes': 0,
+                    'localizacao': '/a',
+                    'url': 'url',
+                },
+            )
         self.assertEqual(resultado, {'id_arquivo': 42})
         cur.callproc.assert_called_once_with('sp_carregar_arquivo', (1, 'a', 'text/plain', 'PRIVADO', 0, '/a', 'url', 0))
         cur.execute.assert_not_called()
@@ -133,10 +156,14 @@ class Transacoes(unittest.TestCase):
     def test_erro_faz_rollback_e_fecha(self):
         con = MagicMock()
         config = self.configuracao()
-        with patch.object(conexao.configparser, 'ConfigParser', return_value=config), patch.object(config, 'read', return_value=['config.ini']), patch.object(conexao.mysql.connector, 'connect', return_value=con):
-            with self.assertRaises(RuntimeError):
-                with conexao.abrir_conexao():
-                    raise RuntimeError('erro controlado')
+        with (
+            patch.object(conexao.configparser, 'ConfigParser', return_value=config),
+            patch.object(config, 'read', return_value=['config.ini']),
+            patch.object(conexao.mysql.connector, 'connect', return_value=con),
+            self.assertRaises(RuntimeError),
+            conexao.abrir_conexao(),
+        ):
+            raise RuntimeError('erro controlado')
         con.rollback.assert_called_once()
         con.commit.assert_not_called()
         con.close.assert_called_once()
@@ -144,9 +171,13 @@ class Transacoes(unittest.TestCase):
     def test_sucesso_confirma_e_fecha(self):
         con = MagicMock()
         config = self.configuracao()
-        with patch.object(conexao.configparser, 'ConfigParser', return_value=config), patch.object(config, 'read', return_value=['config.ini']), patch.object(conexao.mysql.connector, 'connect', return_value=con):
-            with conexao.abrir_conexao():
-                pass
+        with (
+            patch.object(conexao.configparser, 'ConfigParser', return_value=config),
+            patch.object(config, 'read', return_value=['config.ini']),
+            patch.object(conexao.mysql.connector, 'connect', return_value=con),
+            conexao.abrir_conexao(),
+        ):
+            pass
         con.commit.assert_called_once()
         con.rollback.assert_not_called()
         con.close.assert_called_once()

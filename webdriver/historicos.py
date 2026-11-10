@@ -1,6 +1,5 @@
-"""Históricos são consultados, e gerados pelos procedimentos de arquivos."""
-from .conexao import abrir_conexao
 from .catalogo import id_campo
+from .conexao import abrir_conexao
 
 TABELAS = {'operacoes': ('operacao_arquivo', 'id_operacao'), 'versoes': ('versionamento', 'id_versionamento')}
 

@@ -1,12 +1,5 @@
--- WebDriver | Parte 2 | Procedures de autorizacao
--- Pre-requisitos: 01 a 05. Execute como root (cliente com utf8mb4: o nome Conta_usuários tem acento).
--- Verificar_atividades e Chavear (03) permanecem restritas ao root.
 USE webdriver;
 DELIMITER $$
-
--- ADMINISTRATIVAS (SQL SECURITY INVOKER: usam os privilegios de quem chama).
--- Alem da role, validam a conta efetivamente autenticada (CURRENT_USER(), nao falsificavel):
--- root, ou conta cujo nome coincide com o login de um usuario presente em administrador.
 
 CREATE PROCEDURE `Conta_usuários`(IN p_id_arquivo BIGINT UNSIGNED)
 SQL SECURITY INVOKER
@@ -30,9 +23,6 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Arquivo inexistente ou removido';
     END IF;
 
-    -- Mesmas regras de fn_pode_acessar: PUBLICO = todos os usuarios; COMPARTILHADO = dono +
-    -- destinatarios distintos (dono nunca consta em compartilhamento: CHECK id_dono<>id_compartilhado);
-    -- PRIVADO = somente o dono.
     IF v_permissao = 'PUBLICO' THEN
         SELECT COUNT(*) INTO v_total FROM usuario;
     ELSEIF v_permissao = 'COMPARTILHADO' THEN
@@ -67,20 +57,13 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Arquivo inexistente';
     END IF;
 
-    -- O dono nao possui linha em compartilhamento: seu acesso e preservado (arquivo.id_dono).
     DELETE FROM compartilhamento WHERE id_arquivo = p_id_arquivo;
-    -- Arquivo PUBLICO/COMPARTILHADO continuaria acessivel a terceiros: passa a PRIVADO.
-    -- ultima_modificacao, historico e versionamento nao sao alterados (nao ha tipo de operacao para isso).
+
     IF v_permissao <> 'PRIVADO' THEN
         UPDATE arquivo SET permissao_acesso = 'PRIVADO' WHERE id_arquivo = p_id_arquivo;
     END IF;
     COMMIT;
 END$$
-
--- USUARIO COMUM (SQL SECURITY DEFINER). A identidade vem da conta MySQL conectada
--- (USER() = usuario.login); nao existe parametro de ID de usuario nem de arquivo.
--- O arquivo e localizado pelo nome entre os arquivos ATIVOS do proprio usuario.
--- As procedures sp_* continuam sem EXECUTE para as roles.
 
 CREATE PROCEDURE usr_carregar_arquivo(
     IN p_nome VARCHAR(255), IN p_tipo VARCHAR(120), IN p_permissao VARCHAR(20),
@@ -119,7 +102,6 @@ BEGIN
     ELSEIF v_qtd > 1 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Mais de um arquivo com esse nome; renomeie para identifica-lo';
     END IF;
-    -- sp_atualizar_arquivo revalida dono, cota e grava operacao/versionamento.
     CALL sp_atualizar_arquivo(v_arquivo, v_usuario, p_nome, p_tipo, p_permissao, p_tamanho, p_localizacao, p_url);
 END$$
 

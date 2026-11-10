@@ -1,8 +1,3 @@
--- WebDriver | Pessoa 3 | Segundo commit
--- Execute como root depois do modelo fisico e de 04-views-usuario.sql.
--- Mesma identidade do primeiro pacote: conta MySQL individual = usuario.login.
--- As views de empresa so devem receber GRANT para PapelEmpresa.
--- Nenhuma view expoe atividades_recentes ou senhas.
 USE webdriver;
 
 CREATE ALGORITHM = TEMPTABLE

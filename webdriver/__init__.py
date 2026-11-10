@@ -1,1 +1,0 @@
-"""Aplicação Python do WebDriver."""

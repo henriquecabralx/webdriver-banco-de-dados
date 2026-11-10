@@ -1,4 +1,3 @@
-"""Operações do PapelEmpresa: leitura das views da própria instituição."""
 from .usuario import _listar
 
 

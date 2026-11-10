@@ -1,6 +1,5 @@
-"""Metadados de arquivos via procedimentos existentes; sem gravar histórico à mão."""
-from .conexao import abrir_conexao
 from .catalogo import Campo, id_campo
+from .conexao import abrir_conexao
 
 COLUNAS = 'id_arquivo,id_dono,nome,tipo,permissao_acesso,tamanho_bytes,ultima_modificacao,localizacao,url,excluido_em'
 CAMPOS = (Campo('nome', limite=255), Campo('tipo', limite=120), Campo('permissao_acesso', escolhas=('PRIVADO','COMPARTILHADO','PUBLICO')), Campo('localizacao'), Campo('url'))

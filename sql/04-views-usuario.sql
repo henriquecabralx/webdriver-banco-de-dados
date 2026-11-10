@@ -1,10 +1,3 @@
--- WebDriver | Pessoa 3 | Primeiro commit | MySQL 8.0
--- Execute como root apos 01-modelo-fisico.sql.
--- Contrato: cada usuario tem conta MySQL individual com nome igual a usuario.login.
--- Nao usar conta compartilhada, conta anonima ou autenticacao por proxy.
--- Logins dessa demonstracao nao devem conter @; usar o mesmo login por pessoa
--- em todos os hosts autorizados. Nenhum usuario da aplicacao pode alterar
--- login/vinculo de outras pessoas nem criar contas MySQL.
 USE webdriver;
 
 CREATE ALGORITHM = TEMPTABLE
@@ -52,14 +45,3 @@ INNER JOIN arquivo a ON a.id_arquivo = o.id_arquivo
 INNER JOIN usuario dono ON dono.id_usuario = a.id_dono
 INNER JOIN usuario autor ON autor.id_usuario = o.id_usuario
 WHERE BINARY autor.login = BINARY SUBSTRING_INDEX(USER(), '@', 1);
-
--- Historico: neste pacote o usuario consulta suas proprias operacoes,
--- inclusive a remocao de seus arquivos; nao ve operacoes de outras pessoas.
--- IDs sao usados somente nos relacionamentos, nao nas colunas expostas.
--- TEMPTABLE torna as views nao atualizaveis.
--- O definidor e a conta que executar este script e deve continuar existente.
--- Nenhum acesso a atividades_recentes e exposto.
--- Os GRANTs nas views serao adicionados pelo integrante das roles.
--- Nao conceder acesso direto as tabelas base para contornar estas views.
--- Estas sao visoes de leitura; insercao/atualizacao autorizadas exigem
--- rotinas controladas e permissões proprias no trabalho de roles/integracao.

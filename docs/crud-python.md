@@ -4,10 +4,10 @@ Complemento do commit de conexão e planos já integrado na main. Copie o conte�
 
 ## Instalação
 
-Python 3.10 ou superior. Execute o SQL existente `sql/01-modelo-fisico.sql` no MySQL Workbench, em banco novo, se ainda não o executou. Não reexecute esse script em banco populado.
+Python 3.10 a 3.14 (Python 3.12 recomendado). O MySQL Connector/Python ainda não suporta Python 3.15. Execute o SQL existente `sql/01-modelo-fisico.sql` no MySQL Workbench, em banco novo, se ainda não o executou. Não reexecute esse script em banco populado.
 
 ```console
-python -m venv .venv
+python3.12 -m venv .venv
 ```
 
 Ative no PowerShell com `.venv\Scripts\Activate.ps1`, ou no Linux/macOS com `source .venv/bin/activate`.

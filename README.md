@@ -39,12 +39,22 @@ O script [01-modelo-fisico.sql](sql/01-modelo-fisico.sql) implementa a estrutura
 
 ## Como executar
 
-1. Instale MySQL 8.0.16 ou superior e abra o MySQL Workbench.
-2. Conecte-se a uma instância de desenvolvimento.
+Pré-requisitos: Python 3.10 a 3.14 (Python 3.12 recomendado) e MySQL 8.0.16 ou superior. O MySQL Connector/Python ainda não oferece suporte ao Python 3.15.
+
+1. Crie e ative o ambiente virtual com uma versão compatível:
+
+   ```console
+   python3.12 -m venv .venv
+   source .venv/bin/activate
+   python -m pip install -r requirements.txt
+   ```
+
+2. Abra o MySQL Workbench e conecte-se a uma instância de desenvolvimento.
 3. Abra `sql/01-modelo-fisico.sql`.
 4. Execute o script em um banco novo. Ele cria e seleciona o banco `webdriver`.
+5. Copie `config.example.ini` para `config.ini`, configure a conexão e execute `python main.py`.
 
-O script não foi executado em MySQL nesta preparação. Reexecutá-lo após criar as tabelas causará erros de objetos existentes.
+Reexecutar o script após criar as tabelas causará erros de objetos existentes.
 
 ## Regras e limites
 
@@ -61,7 +71,7 @@ Como root, nesta ordem (cliente com utf8mb4, p.ex. `mysql -u root -p --default-c
 
 Pré-requisitos: MySQL 8.0.16+, sem contas anônimas, uma conta MySQL por usuário com nome igual a `usuario.login`, e `SET DEFAULT ROLE` para cada conta. `atividades_recentes` é acessível apenas ao root. Detalhes, decisões de interpretação e limitações: [docs/parte2-permissoes.md](docs/parte2-permissoes.md).
 
-Testes: `python -m unittest discover -s tests -v` (unitários); com `WEBDRIVER_TEST_MYSQL=1` também roda os de integração em MySQL real.
+Testes: `python -m unittest discover -s tests -v` (unitários); com `WEBDRIVER_TEST_MYSQL=1` também roda os de integração em MySQL real. A suíte completa foi validada com Python 3.12 e MySQL 8.4.
 
 ## Arquivos editáveis dos diagramas
 

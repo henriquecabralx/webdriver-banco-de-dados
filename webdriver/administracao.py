@@ -1,7 +1,5 @@
-"""Procedures da Parte 2. Conta_usuários e Remover_acessos: PapelAdm/root. Verificar_atividades e
-Chavear: somente root, pois atividades_recentes não é acessível a nenhuma role."""
-from .conexao import abrir_conexao
 from .catalogo import id_campo
+from .conexao import abrir_conexao
 
 
 def _chamar(nome, args=()):

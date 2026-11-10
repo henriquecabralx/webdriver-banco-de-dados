@@ -1,21 +1,22 @@
-"""Testes isolados (sem MySQL) da integração Python da Parte 2.
-As regras de banco são verificadas em tests/test_seguranca_mysql.py."""
 import sys
 import types
 import unittest
 from contextlib import contextmanager
+from typing import ClassVar
 from unittest.mock import MagicMock, patch
 
 try:
-    import mysql.connector  # noqa: F401
+    import mysql.connector as mysql_connector
 except ImportError:
     driver = types.ModuleType('mysql.connector')
     driver.connect = MagicMock()
     pacote = types.ModuleType('mysql')
     pacote.connector = driver
     sys.modules.update({'mysql': pacote, 'mysql.connector': driver})
+else:
+    del mysql_connector
 
-from webdriver import perfil, usuario, empresa, administracao, arquivos  # noqa: E402
+from webdriver import administracao, arquivos, empresa, perfil, usuario
 
 
 @contextmanager
@@ -41,7 +42,14 @@ class Perfil(unittest.TestCase):
 
 
 class Usuario(unittest.TestCase):
-    DADOS = {'nome': 'a.txt', 'tipo': 'text/plain', 'permissao_acesso': 'PRIVADO', 'localizacao': '/a', 'url': 'u', 'tamanho_bytes': '5'}
+    DADOS: ClassVar[dict[str, str]] = {
+        'nome': 'a.txt',
+        'tipo': 'text/plain',
+        'permissao_acesso': 'PRIVADO',
+        'localizacao': '/a',
+        'url': 'u',
+        'tamanho_bytes': '5',
+    }
 
     def test_carregar_e_atualizar_nao_enviam_ids(self):
         con, cur = conexao_falsa()
